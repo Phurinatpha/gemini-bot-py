@@ -1,0 +1,12 @@
+version: '3'
+services:
+  bot:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - redis
+  redis:
+    image: redis
