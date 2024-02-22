@@ -46,19 +46,18 @@ image_model = genai.GenerativeModel(model_name="gemini-pro-vision", generation_c
 
 #---------------------------------------------Discord Code-------------------------------------------------
 # Initialize Discord bot
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
+bot = commands.Bot(command_prefix="?", intents=discord.Intents.all())
 
 @bot.event
 async def on_ready():
     print("----------------------------------------")
     print(f'Gemini Bot Logged in as {bot.user}')
     print("----------------------------------------")
-
-async def get_meme():
-    async with aiohttp.ClientSession() as session:
-        async with session.get('https://meme-api.com/gimme') as response:
-            data = await response.json()
-            return data.get('url')
+    await bot.wait_until_ready()
+    for guild in bot.guilds:
+        for channel in guild.text_channels:
+            if channel.permissions_for(guild.me).send_messages:
+                await channel.send("Hello! I am LK-gemini. If you need help, you can use ?bot_help.")
 
 @bot.command()
 async def meme(ctx):
@@ -66,37 +65,40 @@ async def meme(ctx):
     await ctx.send(f"Here's your meme: {meme_url}")
 
 @bot.command()
-async def hello(ctx):
-    await ctx.send("Hello! I am LK-gemini assistance")
-
-@bot.command()
 async def bot_help(ctx):
     help_message = ("**LK-Gemini Bot Help**\n"
-                    "To generate a meme, use the command `!meme`.\n"
+                    "To generate a meme, use the command `?meme`.\n"
                     "To interact with the AI model, simply mention the bot (@LK-Gemini) followed by your message.\n"
                     "Example: `@LK-Gemini How are you?`\n"
-                    "You can also use other commands like `!hello` to greet the bot.\n"
                     "For any further assistance, feel free to ask!\n")
     await ctx.send(help_message)
 
+async def get_meme():
+    async with aiohttp.ClientSession() as session:
+        async with session.get('https://meme-api.com/gimme') as response:
+            data = await response.json()
+            return data.get('url')
+        
 #On Message Function
 @bot.event
 async def on_message(message):
-    # Ignore messages sent by the bot
-    if message.author == bot.user or message.mention_everyone:
+    await bot.process_commands(message)
+    # Ignore messages sent by the bot or if it's a command invocation
+    if message.author == bot.user:
         return
+
     # Check if the bot is mentioned or the message is a DM
     if bot.user.mentioned_in(message) or isinstance(message.channel, discord.DMChannel):
-        #Start Typing to seem like something happened
+        # Start Typing to seem like something happened
         cleaned_text = clean_discord_message(message.content)
 
         async with message.channel.typing():
             # Check for image attachments
             if message.attachments:
                 print("New Image Message FROM:" + str(message.author.id) + ": " + cleaned_text)
-                #Currently no chat history for images
+                # Currently no chat history for images
                 for attachment in message.attachments:
-                    #these are the only image extentions it currently accepts
+                    # These are the only image extensions it currently accepts
                     if any(attachment.filename.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']):
                         await message.add_reaction('🎨')
 
@@ -107,34 +109,38 @@ async def on_message(message):
                                     return
                                 image_data = await resp.read()
                                 response_text = await generate_response_with_image_and_text(image_data, cleaned_text)
-                                #Split the Message so discord does not get upset
+                                # Split the Message so discord does not get upset
                                 await split_and_send_messages(message, response_text, 1700)
                                 return
-            #Not an Image do text response
+            # Not an Image, do text response
             else:
                 print("New Message FROM:" + str(message.author.id) + ": " + cleaned_text)
-                #Check for Keyword Reset
+                # Check for Keyword Reset
                 if "RESET" in cleaned_text:
-                    #End back message
+                    # End back message
                     if message.author.id in message_history:
                         del message_history[message.author.id]
                     await message.channel.send("🤖 History Reset for user: " + str(message.author.name))
                     return
                 await message.add_reaction('💬')
 
-                #Check if history is disabled just send response
-                if(MAX_HISTORY == 0):
+                # Check if history is disabled, just send response
+                if MAX_HISTORY == 0:
                     response_text = await generate_response_with_text(cleaned_text)
-                    #add AI response to history
+                    # Add AI response to history
                     await split_and_send_messages(message, response_text, 1700)
-                    return;
-                #Add users question to history
-                update_message_history(message.author.id,cleaned_text)
+                    return
+
+                # Add user's question to history
+                update_message_history(message.author.id, cleaned_text)
                 response_text = await generate_response_with_text(get_formatted_message_history(message.author.id))
-                #add AI response to history
-                update_message_history(message.author.id,response_text)
-                #Split the Message so discord does not get upset
+                # Add AI response to history
+                update_message_history(message.author.id, response_text)
+                # Split the Message so discord does not get upset
                 await split_and_send_messages(message, response_text, 1700)
+
+        
+
 
 #---------------------------------------------AI Generation History-------------------------------------------------
 
@@ -201,3 +207,4 @@ def clean_discord_message(input_string):
 
 #---------------------------------------------Run Bot-------------------------------------------------
 bot.run(DISCORD_BOT_TOKEN)
+
