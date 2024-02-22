@@ -2,6 +2,7 @@ version: '3'
 services:
   bot:
     build: .
+    container_name: gemini
     volumes:
       - .:/app
     environment:
@@ -9,4 +10,5 @@ services:
     depends_on:
       - redis
   redis:
+    container_name: my_redis_container
     image: redis

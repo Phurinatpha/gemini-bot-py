@@ -54,6 +54,31 @@ async def on_ready():
     print(f'Gemini Bot Logged in as {bot.user}')
     print("----------------------------------------")
 
+async def get_meme():
+    async with aiohttp.ClientSession() as session:
+        async with session.get('https://meme-api.com/gimme') as response:
+            data = await response.json()
+            return data.get('url')
+
+@bot.command()
+async def meme(ctx):
+    meme_url = await get_meme()
+    await ctx.send(f"Here's your meme: {meme_url}")
+
+@bot.command()
+async def hello(ctx):
+    await ctx.send("Hello! I am LK-gemini assistance")
+
+@bot.command()
+async def help(ctx):
+    help_message = ("**LK-Gemini Bot Help**\n"
+                    "To generate a meme, use the command `!meme`.\n"
+                    "To interact with the AI model, simply mention the bot (@LK-Gemini) followed by your message.\n"
+                    "Example: `@LK-Gemini How are you?`\n"
+                    "You can also use other commands like `!hello` to greet the bot.\n"
+                    "For any further assistance, feel free to ask!\n")
+    await ctx.send(help_message)
+
 #On Message Function
 @bot.event
 async def on_message(message):
@@ -154,7 +179,6 @@ def get_formatted_message_history(user_id):
 
 #---------------------------------------------Sending Messages-------------------------------------------------
 async def split_and_send_messages(message_system, text, max_length):
-
     # Split the string into parts
     messages = []
     for i in range(0, len(text), max_length):
