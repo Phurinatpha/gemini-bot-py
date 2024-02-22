@@ -70,7 +70,7 @@ async def hello(ctx):
     await ctx.send("Hello! I am LK-gemini assistance")
 
 @bot.command()
-async def help(ctx):
+async def bot_help(ctx):
     help_message = ("**LK-Gemini Bot Help**\n"
                     "To generate a meme, use the command `!meme`.\n"
                     "To interact with the AI model, simply mention the bot (@LK-Gemini) followed by your message.\n"
